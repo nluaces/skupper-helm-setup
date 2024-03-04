@@ -1,0 +1,13 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: east
+  labels:
+    name: east
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: west
+  labels:
+    name: west

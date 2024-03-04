@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-backend
+  namespace: east
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+        - name: backend
+          image: quay.io/skupper/hello-world-backend
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: east
+  annotations:
+    skupper.io/port: "8080"
+    skupper.io/address: "backend"
+    skupper.io/proxy: "http"
+    skupper.io/target: "backend"
+spec:
+  selector:
+    app: hello-world
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-frontend
+  namespace: west
+spec:
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+        - name: backend
+          image: quay.io/skupper/hello-world-frontend
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: west
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: hello-world
+  type: LoadBalancer

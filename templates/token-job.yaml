@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: token-job
+  namespace: default
+  labels:
+    application: token-job
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    application: token-job
+  name: token-job
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: token-job-west
+  namespace: west
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: token-job
+subjects:
+  - kind: ServiceAccount
+    name: token-job
+    namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: token-job-east
+  namespace: east
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: token-job
+subjects:
+  - kind: ServiceAccount
+    name: token-job
+    namespace: default
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .Release.Name }}"
+  namespace: default
+  finalizers:
+    - kubernetes
+  labels:
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    application: token-job
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: "{{ .Release.Name }}"
+      labels:
+        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    spec:
+      serviceAccountName: token-job
+      restartPolicy: Never
+      containers:
+        - name: kubectl
+          image: "k8s.gcr.io/hyperkube:v1.12.1"
+          imagePullPolicy: "IfNotPresent"
+          command:
+            - /bin/sh
+            - -c
+            - >
+              sleep 30;
+              kubectl get secret -o json east-secret -n east | jq 'del(.metadata.namespace)' > ./token.json;
+              kubectl apply -f ./token.json -n west;
+

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: skupper-test-setup
+description: A Helm chart for a Skupper test setup
+version: 0.1.0
+
