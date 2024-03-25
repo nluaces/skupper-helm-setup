@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skupper-site
+  namespace: {{.Values.sites.public.namespace}}
+data:
+  name: {{.Values.sites.public.namespace |quote }}
+  console: "true"
+  flow-collector: "true"
+  console-user: {{.Values.sites.public.console.user | quote}}
+  console-password: {{.Values.sites.public.console.password |quote}}
