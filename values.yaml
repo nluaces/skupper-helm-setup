@@ -2,5 +2,13 @@ replicaCount: 1
 image:
   repository: quay.io/skupper/site-controller
   tag: 1.6.0
-service:
-  port: 8443
+
+sites:
+  public:
+    namespace: "west"
+    console:
+      user: "admin"
+      password: 1234
+
+  private:
+    namespace: "east"

@@ -30,7 +30,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: token-job-west
-  namespace: west
+  namespace: {{.Values.sites.public.namespace}}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -44,7 +44,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: token-job-east
-  namespace: east
+  namespace: {{.Values.sites.private.namespace}}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -60,10 +60,9 @@ kind: Job
 metadata:
   name: "{{ .Release.Name }}"
   namespace: default
-  finalizers:
-    - kubernetes
+  finalizers: []
   labels:
-    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    helm.sh/chart: {{.Chart.Name}}
     application: token-job
   annotations:
     # This is what defines this resource as a hook. Without this line, the
@@ -76,7 +75,7 @@ spec:
     metadata:
       name: "{{ .Release.Name }}"
       labels:
-        helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+        helm.sh/chart: {{.Chart.Name}}
     spec:
       serviceAccountName: token-job
       restartPolicy: Never
@@ -89,6 +88,5 @@ spec:
             - -c
             - >
               sleep 30;
-              kubectl get secret -o json east-secret -n east | jq 'del(.metadata.namespace)' > ./token.json;
-              kubectl apply -f ./token.json -n west;
-
+              kubectl get secret -o json link1 -n {{.Values.sites.public.namespace}} | jq 'del(.metadata.namespace)' > ./token.json;
+              kubectl apply -f ./token.json -n {{.Values.sites.private.namespace}};
